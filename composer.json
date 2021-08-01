@@ -1,0 +1,21 @@
+{
+    "name": "jcpw/pretix-rest-client",
+    "description": "Restclient for Pretix",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^7.3",
+        "vlucas/phpdotenv": "^5.3"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Johann Weise",
+            "email": "github@jcpw.de"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Jcpw\\" : "src/"
+        }
+    }
+}
