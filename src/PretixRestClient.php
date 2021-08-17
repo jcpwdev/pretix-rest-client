@@ -30,7 +30,8 @@ class PretixRestClient extends Client {
                 'Accept' => '*/*',
                 'Connection' => 'keep-alive',
                 'Accept-Encoding' => 'gzip, deflate, br',
-            ]
+            ],
+            'allow_redirects' => false
         ];
 
         parent::__construct($config);
@@ -124,6 +125,28 @@ class PretixRestClient extends Client {
 
         return false;
 
+    }
+    
+    public function getCertificateOfAttendance($event_id , $orderposition_id) {
+        $this->findToken();
+        
+        $response = $this->get("/api/v1/organizers/"  . $this->organizer_id .  "/events/" . $event_id . "/orderpositions/" . $orderposition_id . "/certificate/");
+        
+        if($response->getStatusCode() == 303 && $response->getHeaderLine("Location")) {
+
+            for($tries = 0; $tries < 3; $tries++) {
+                $certifacteResponse = $this->get($response->getHeaderLine("Location"));
+
+                if($certifacteResponse->getStatusCode == 200) {
+                    return $certifacteResponse;
+                } else if($response->getStatusCode() != 409) {
+                    break;
+                }
+                sleep(2);
+
+            }
+        }
+        return false;
     }
 
 }
