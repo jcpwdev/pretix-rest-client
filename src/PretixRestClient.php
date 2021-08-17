@@ -30,8 +30,7 @@ class PretixRestClient extends Client {
                 'Accept' => '*/*',
                 'Connection' => 'keep-alive',
                 'Accept-Encoding' => 'gzip, deflate, br',
-            ],
-            'allow_redirects' => false
+            ]
         ];
 
         parent::__construct($config);
@@ -104,7 +103,7 @@ class PretixRestClient extends Client {
             $this->http_options['headers'] = ['Authorization' => 'Token ' . $this->accesstoken];
 
         } else {
-            throw new NoOrganizerException();
+            throw new NoOrganizerException("No accestoken found for organizer " . $this->organizer_id);
         }
 
 
@@ -132,9 +131,12 @@ class PretixRestClient extends Client {
 
         try {
             $response = $this->get('organizers/' . $this->organizer_id .  '/events/' . $event_id . '/orderpositions/' . $orderposition_id , $this->http_options);
+
         } catch (RequestException $req_exce) {
+
             return false;
         }
+
 
         if($response->getStatusCode() < 400) {
             return $response->getHeader('Content-Type')[0] == 'application/json' ? json_decode($response->getBody()) : $response->getBody();
@@ -146,23 +148,38 @@ class PretixRestClient extends Client {
     
     public function getCertificateOfAttendance($event_id , $orderposition_id) {
         $this->findToken();
-        
-        $response = $this->get("/api/v1/organizers/"  . $this->organizer_id .  "/events/" . $event_id . "/orderpositions/" . $orderposition_id . "/certificate/");
-        
+        $this->http_options['allow_redirects'] = false;
+
+        try {
+
+            $response = $this->get("/api/v1/organizers/"  . $this->organizer_id .  "/events/" . $event_id . "/orderpositions/" . $orderposition_id . "/certificate/",  $this->http_options);
+        } catch (RequestException $re) {
+             return false;
+        }
+
         if($response->getStatusCode() == 303 && $response->getHeaderLine("Location")) {
 
-            for($tries = 0; $tries < 3; $tries++) {
-                $certifacteResponse = $this->get($response->getHeaderLine("Location"));
+            $this->http_options['http_errors'] = false;
 
-                if($certifacteResponse->getStatusCode == 200) {
+            for($tries = 0; $tries < 3; $tries++) {
+
+                $certifacteResponse = $this->get($response->getHeaderLine("Location"), $this->http_options);
+
+                if($certifacteResponse->getStatusCode() == 200) {
+                    $this->http_options['allow_redirects'] = true;
+                    $this->http_options['http_errors'] = true;
+
                     return $certifacteResponse;
-                } else if($response->getStatusCode() != 409) {
+                } else if($certifacteResponse->getStatusCode() != 409) {
                     break;
                 }
-                sleep(2);
 
+                sleep(2);
             }
         }
+
+        $this->http_options['allow_redirects'] = true;
+        $this->http_options['http_errors'] = true;
         return false;
     }
 
