@@ -89,6 +89,22 @@ class PretixRestClient extends Client {
         return false;
     }
 
+    public function getQuotasWithAvailability($event_id) {
+        $this->findToken();
+
+        try {
+            $response = $this->get('organizers/' . $this->organizer_id .  '/events/' . $event_id . '/quotas/?with_availability=true', $this->http_options);
+        } catch (RequestException $req_exce) {
+            return false;
+        }
+
+        if($response->getStatusCode() < 400) {
+            return $response->getHeader('Content-Type')[0] == 'application/json' ? json_decode($response->getBody()) : $response->getBody();
+        }
+
+        return false;
+    }
+
     public function getEvents($nexturl = null) {
         $this->findToken();
 
