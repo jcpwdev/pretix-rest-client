@@ -174,11 +174,15 @@ class PretixRestClient extends Client {
 
     }
 
-    public function getOrders($event_id) {
+    public function getOrders($event_id = null, $nexturl = null) {
         $this->findToken();
 
         try {
-            $response = $this->get('organizers/' . $this->organizer_id .  '/events/' . $event_id . '/orders/', $this->http_options);
+            if($event_id) {
+                $response = $this->get('organizers/' . $this->organizer_id .  '/events/' . $event_id . '/orders/', $this->http_options);
+            } else  if($nexturl) {
+                $response = $this->next($nexturl);
+            }
         } catch (RequestException $req_exce) {
             return false;
         }
@@ -188,6 +192,22 @@ class PretixRestClient extends Client {
         }
 
         return false;
+
+    }
+
+    public function getAllOrders($event_id) {
+
+        $response = $this->getOrders($event_id);
+
+        $cumulative = $response->results;
+
+        while($response->next) {
+
+            $response = $this->getOrders(null , $response->next);
+            $cumulative = array_merge($cumulative, $response->results);
+        }
+
+        return $cumulative;
 
     }
 
